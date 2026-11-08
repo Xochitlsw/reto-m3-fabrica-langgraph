@@ -99,3 +99,26 @@ Resultado: diseño aprobado con los ajustes. Las versiones quedaron en la últim
 (langgraph 1.2.17, langgraph-checkpoint-sqlite 3.1.2, pydantic 2.14.1, pytest 9.1.1, pytest-cov
 7.1.0, ruff 0.17.2). Al reordenar la fase 2 en 12 pasos, la prueba del abanico pasó del paso 9 al
 paso 10. Se cerró la fase 1 con `docs/diseno.md`, este registro y `CLAUDE.md` actualizado.
+
+## 2026-11-08 · Fase 1 · Cierre (commit)
+
+```text
+sí, haz el commit
+```
+
+Resultado: commit `95fe0b0` en `main` (primer commit del repositorio), sin push.
+
+## 2026-11-08 · Fase 2 · Núcleo con modelo falso
+
+```text
+Fase 2 · Núcleo con modelo falso.
+
+Sigue los pasos 1 a 12 de @docs/diseno.md (sección 10) en orden; no pases a un paso sin que su prueba esté en verde. En esta fase no hay ninguna llamada al modelo real. Respeta el tope de 2 horas y el punto de control del paso 6: corre `date` al empezar, en ese punto de control y al terminar.
+
+- Registra esta instrucción en evidencia/prompts.md.
+- Paso 1: agrega salida/ a .gitignore y crea CHANGELOG.md (Keep a Changelog) con la entrada de la fase 1; en el paso 12 agrega la de la fase 2.
+- Pasos 10 u 11: genera docs/grafo.md con `fabrica grafo` y compáralo con los diagramas de docs/diseno.md y CLAUDE.md; si no coinciden, corrige los diagramas escritos a mano para que reflejen el grafo real.
+- Te autorizo commits locales, sin push, al terminar los pasos 6 y 10, con mensajes en español que digan qué quedó probado. El del paso 12 me lo propones.
+- Si un paso se atora más de 20 minutos, detente y repórtame con la salida del error en lugar de rodearlo.
+- Al terminar, repórtame en 25 líneas como máximo: la salida de `uv run pytest -q --cov=fabrica` (con el porcentaje) y de `uv run ruff check .`, la corrida de test_cli_procesos (iniciar → estado → aprobar con el mismo thread_id), qué resultó de lo que faltaba verificar (Command(goto=lista), stream y LANGGRAPH_STRICT_MSGPACK), los recortes aplicados, las horas de `date` y cualquier desviación del diseño con su motivo.
+```

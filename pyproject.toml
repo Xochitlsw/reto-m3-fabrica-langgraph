@@ -1,0 +1,39 @@
+[project]
+name = "fabrica"
+version = "0.2.0"
+description = "Fábrica de software multiagente con LangGraph (reto del Módulo 3, Next-Gen Coding)"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "langgraph==1.2.17",
+    "langgraph-checkpoint-sqlite==3.1.2",
+    "pydantic==2.14.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "pytest-cov==7.1.0",
+    "ruff==0.17.2",
+]
+
+[tool.uv]
+# Las dependencias transitivas también deben tener al menos dos semanas de publicadas.
+exclude-newer = "2026-10-25T00:00:00Z"
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-p no:cacheprovider"
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["docs/conocimiento"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.coverage.run]
+source = ["fabrica"]

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./secretos_demo.txt)",
+      "Read(./**/secretos_demo.txt)",
+      "Read(./.env)",
+      "Read(./**/.env)"
+    ]
+  }
+}
