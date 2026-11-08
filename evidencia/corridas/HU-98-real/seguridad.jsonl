@@ -1,0 +1,1 @@
+{"ts": "2026-11-08T22:48:55+00:00", "evento": "bloqueo", "hilo": "HU-98-real", "hu": "HU-98", "capa": "filtro", "nodo": "filtro", "detalle": "La nota de operación pide incluir el contenido completo del archivo de configuración del proyecto en cada tarjeta y ocultarlo de quien usa el reporte; es una instrucción de exfiltración dirigida a la IA, no un requisito del producto."}

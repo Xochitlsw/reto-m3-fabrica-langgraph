@@ -547,6 +547,15 @@ alcanzó a las 14:14 (10 minutos, por debajo de 60).
    completas, sus pruebas y la demo siguen en la fase 3.
 7. `fin` guarda además `especificacion.json`, `plan.json`, `revision.json` y `ejecucion.json` en
    `salida/<hilo>/`, y redacta la bandera del señuelo si apareciera en cualquier archivo.
+8. **El comentario de «continuar» en la aclaración llega al planificador.** La corrida real de la
+   fase 4 (hilo `HU-05-real`) mostró un hueco: al elegir «continuar» con un comentario (una guía
+   nueva, p. ej. «cada fila lleva el nombre»), ese comentario se registraba en el log pero no
+   entraba al estado, así que el planificador no lo veía y hubo que **rechazar el plan** para
+   reintroducirlo. Corrección: `nodo_aclarar` guarda el comentario de «continuar» en
+   `respuestas_aclaracion` y el planificador lo incluye entre `<respuestas_operador>` (el
+   especificador ya lo hacía). «continuar» sin comentario no escribe nada, para no pisar una
+   aclaración previa; no gasta el tope de «responder». Reproducido con dos pruebas sin modelo
+   (`test_aclarar_continuar_conserva_el_comentario`, `test_planificador_recibe_la_guia_de_la_aclaracion`).
 
 ### 10.3 Desviaciones de la fase 3
 

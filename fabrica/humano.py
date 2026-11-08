@@ -110,6 +110,10 @@ def nodo_aclarar(estado: EstadoFabrica) -> dict:
     if resp.decision == "responder":
         update["respuestas_aclaracion"] = resp.comentario
         update["aclaraciones"] = estado.get("aclaraciones", 0) + 1
+    elif resp.decision == "continuar" and resp.comentario:
+        # El comentario de «continuar» es guía para el planificador; sin esto se perdía y había
+        # que rechazar el plan para reintroducirlo (hueco de la fase 4; diseño, sección 10.2).
+        update["respuestas_aclaracion"] = resp.comentario
     return update
 
 

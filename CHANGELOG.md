@@ -5,6 +5,32 @@ Todos los cambios notables de este proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto usa
 [versionado semántico](https://semver.org/lang/es/).
 
+## [0.4.0] - 2026-11-08
+
+Fase 4 · Corridas con el modelo real (gasta cuota de la suscripción).
+
+### Agregado
+
+- `historias/HU-98-soporte.md`: historia sutil para mostrar la capa 2 (el filtro con haiku la marca
+  aunque pase las reglas de la capa 1).
+- `evidencia/corridas/sonda.md` y `evidencia/corridas/HU-05-real/` (reporte, llamadas, código,
+  pruebas y log de seguridad de la corrida real) y `evidencia/capturas/` con la corrida punta a punta.
+- Pruebas sin modelo del hueco de la aclaración (`test_aclarar_continuar_conserva_el_comentario`,
+  `test_aclarar_continuar_sin_comentario_no_guarda_nada`,
+  `test_planificador_recibe_la_guia_de_la_aclaracion`). 247 pruebas, cobertura 97 %.
+
+### Corregido
+
+- **El comentario de «continuar» en la aclaración no llegaba al planificador** (hallado en la corrida
+  real `HU-05-real`): se registraba en el log pero no entraba al estado, así que había que rechazar
+  el plan para reintroducir esa guía. Ahora `nodo_aclarar` lo guarda en `respuestas_aclaracion` y el
+  planificador lo incluye entre `<respuestas_operador>`. Diseño, sección 10.2, punto 8.
+
+### Cambiado
+
+- `ruff` excluye `evidencia/corridas` y `salida` (código generado por el modelo, no fuente del
+  proyecto).
+
 ## [0.3.0] - 2026-11-08
 
 Fase 3 · Seguridad completa y demo del ataque. Ninguna llamada al modelo real.

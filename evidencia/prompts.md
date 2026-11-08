@@ -171,3 +171,16 @@ sí al commit
 ```
 
 Resultado: commit de la fase 3 en `main` con el mensaje propuesto, sin push.
+
+## 2026-11-08 · Fase 4 · Corridas con el modelo real
+
+```text
+Fase 4 · Corridas con el modelo real (gasta cuota de la suscripción). Corre `date` al empezar y al terminar.
+
+1. Sonda: avísame, espera mi confirmación y ejecuta `fabrica sonda` (las dos llamadas baratas con haiku). Repórtame: herramientas y MCP vacíos, tokens de entrada (que confirmen que no se carga CLAUDE.md), si el esquema de Especificacion pasó y el costo.
+2. Guion para mí: dame los comandos exactos para correr HU-05 con el modelo real desde mi propia terminal, en la carpeta Reto: iniciar (hasta la pausa del plan), estado (para mostrar que el checkpoint sobrevive entre procesos) y aprobar con --operador xochitl. Indica en qué momento tomar cada captura y dónde guardarla (evidencia/capturas/).
+3. Cuando te pase el resultado, analiza evidencia/corridas/<hilo>/ y el log de seguridad. Si algo falla, primero reprodúcelo con una prueba sin modelo, luego corrígelo y dame el comando para repetir. Máximo 3 corridas de HU-05; si la tercera falla, detente y repórtame.
+4. Si queda tiempo y cuota: HU-98 para mostrar el filtro (una llamada a haiku) y HU-99 con las defensas activas por la CLI real (el guardián la bloquea sin llamar al modelo).
+
+Registra esta instrucción en evidencia/prompts.md. Por cada corrida reporta: hilo, estado final, llamadas por agente, ciclos de corrección, costo total, tiempo y cualquier problema con su corrección. Al final propón el commit de la evidencia, sin hacerlo.
+```

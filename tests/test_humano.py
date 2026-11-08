@@ -108,6 +108,29 @@ def test_aclarar_responder_una_vez(estado):
     assert humano.opciones("aclaracion", final) == ["continuar", "terminar"]
 
 
+def test_aclarar_continuar_conserva_el_comentario(estado):
+    """«continuar» con comentario guarda esa guía para el planificador; antes se perdía."""
+    app = _grafo(humano.nodo_aclarar)
+    cfg = {"configurable": {"thread_id": "t5b"}}
+    app.invoke(estado, cfg)
+    final = app.invoke(Command(resume=_respuesta("aclaracion", "continuar",
+                                                 estado["especificacion"],
+                                                 comentario="cada fila lleva el nombre")), cfg)
+    assert final["respuestas_aclaracion"] == "cada fila lleva el nombre"
+    assert final.get("aclaraciones", 0) == 0  # «continuar» no gasta el tope de «responder»
+    assert log.leer()[0]["evento"] == "aclaracion"
+
+
+def test_aclarar_continuar_sin_comentario_no_guarda_nada(estado):
+    """«continuar» sin comentario no escribe respuestas_aclaracion (no pisa una previa)."""
+    app = _grafo(humano.nodo_aclarar)
+    cfg = {"configurable": {"thread_id": "t5c"}}
+    app.invoke(estado, cfg)
+    final = app.invoke(Command(resume=_respuesta("aclaracion", "continuar",
+                                                 estado["especificacion"])), cfg)
+    assert "respuestas_aclaracion" not in final
+
+
 def test_aclarar_responder_agotado(estado):
     """Con la aclaración usada, «responder» se rechaza y la pausa sigue."""
     estado["aclaraciones"] = 1

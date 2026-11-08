@@ -154,6 +154,15 @@ def test_comentario_y_respuestas_del_operador(estado):
     assert "<respuestas_operador>" in m.llamadas[1]["prompt"]
 
 
+def test_planificador_recibe_la_guia_de_la_aclaracion(estado):
+    """La guía dada al «continuar» la aclaración llega al planificador entre delimitadores."""
+    estado["respuestas_aclaracion"] = "cada fila lleva el nombre del empleado"
+    m = falso.ModeloFalso()
+    AGENTES["planificador"].ejecutar(estado, m)
+    assert "<respuestas_operador>" in m.llamadas[0]["prompt"]
+    assert "cada fila lleva el nombre del empleado" in m.llamadas[0]["prompt"]
+
+
 def test_filtro_sospechosa_bloquea_y_registra(estado):
     """El filtro marca la historia, guarda el motivo y escribe en el log."""
     update = AGENTES["filtro"].ejecutar(estado, falso.ModeloFalso("sospechosa"))

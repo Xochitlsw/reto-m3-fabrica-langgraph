@@ -16,6 +16,8 @@ class Planificador(Agente):
         """La especificación; si la persona rechazó el plan, el anterior y su comentario."""
         partes = ["Escribe el plan del módulo que cumple la especificación.",
                   envolver("especificacion", estado["especificacion"])]
+        if estado.get("respuestas_aclaracion"):
+            partes.append(envolver("respuestas_operador", estado["respuestas_aclaracion"]))
         decision = estado.get("decision_plan") or {}
         if decision.get("decision") == "rechazar" and estado.get("plan"):
             partes.append(envolver("plan_anterior", estado["plan"]))
