@@ -210,7 +210,8 @@ def test_cp03_mes_con_dia_inexistente():
 
 def test_cp04_singular():
     """CP-04 · C-03: un año y un mes, en singular."""
-    assert formatear_antiguedad(*calcular_antiguedad(date(2024, 10, 8), CORTE)) == "1 año y 1 mes"
+    antiguedad = calcular_antiguedad(date(2024, 10, 8), date(2025, 11, 8))
+    assert formatear_antiguedad(*antiguedad) == "1 año y 1 mes"
 
 
 def test_cp05_baja_y_reconocimientos():
@@ -338,8 +339,11 @@ class ModeloFalso:
             if e == "contrato_invalido":
                 return {"modulo": "antiguedad", "funciones": "no es una lista"}
             plan = copy.deepcopy(PLAN)
-            if "<comentario_operador>" in prompt:
-                plan["casos_borde"].append("Corte el mismo día del ingreso: 0 años y 0 meses")
+            m = re.search(r"<plan_anterior>(.*?)</plan_anterior>", prompt, flags=re.DOTALL)
+            if m:  # replanifica: parte del plan rechazado y agrega un ajuste nuevo
+                plan = json.loads(m.group(1))
+                n = len(plan["casos_borde"]) - len(PLAN["casos_borde"]) + 1
+                plan["casos_borde"].append(f"Ajuste {n} por el comentario de la persona")
             return plan
         if agente == "implementador":
             if e == "ataque":

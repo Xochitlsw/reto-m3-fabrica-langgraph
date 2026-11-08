@@ -190,3 +190,12 @@ def test_como_nodo(estado):
     """El agente como nodo usa el modelo que indica el estado."""
     nodo = como_nodo(AGENTES["documentador"], None)
     assert "documentacion" in nodo(estado)
+
+
+def test_plan_identico_al_rechazado_no_se_acepta(estado):
+    """Si el planificador repite el plan rechazado, el validador lo devuelve (sin bucle)."""
+    estado["decision_plan"] = {"decision": "rechazar", "comentario": "cambia algo"}
+    update = AGENTES["planificador"].ejecutar(estado, Guion(copy.deepcopy(falso.PLAN),
+                                                            copy.deepcopy(falso.PLAN)))
+    assert "plan" not in update
+    assert any("idéntico" in p for p in update["errores_agente"][0]["problemas"])

@@ -2,7 +2,7 @@
 
 from fabrica.agentes.base import Agente, envolver
 from fabrica.contratos import Especificacion, Plan, validar_plan
-from fabrica.estado import EstadoFabrica
+from fabrica.estado import EstadoFabrica, huella
 
 
 class Planificador(Agente):
@@ -23,8 +23,14 @@ class Planificador(Agente):
         return "\n\n".join(partes)
 
     def validar(self, salida: Plan, estado: EstadoFabrica) -> list[str]:
-        """Cobertura de criterios, número de pasos y largo renderizado."""
-        return validar_plan(salida, Especificacion.model_validate(estado["especificacion"]))
+        """Cobertura de criterios, número de pasos, largo y que no repita el plan rechazado."""
+        problemas = validar_plan(salida, Especificacion.model_validate(estado["especificacion"]))
+        decision = estado.get("decision_plan") or {}
+        if (decision.get("decision") == "rechazar" and estado.get("plan")
+                and huella(salida.model_dump()) == huella(estado["plan"])):
+            # Sin esta regla, el mismo plan dejaría vigente el rechazo y el ciclo no avanzaría.
+            problemas.append("El plan es idéntico al rechazado: atiende el comentario.")
+        return problemas
 
     def resumen(self, salida: Plan) -> str:
         """Módulo y número de funciones."""
