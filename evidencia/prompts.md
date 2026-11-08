@@ -184,3 +184,18 @@ Fase 4 · Corridas con el modelo real (gasta cuota de la suscripción). Corre `d
 
 Registra esta instrucción en evidencia/prompts.md. Por cada corrida reporta: hilo, estado final, llamadas por agente, ciclos de corrección, costo total, tiempo y cualquier problema con su corrección. Al final propón el commit de la evidencia, sin hacerlo.
 ```
+
+## 2026-11-08 · Fase 5 · Documentación y publicación
+
+```text
+Fase 5 · Documentación y publicación. Tope: 45 minutos; corre `date` al empezar y al terminar.
+
+1. README.md pensado para alguien que llega nuevo al proyecto (criterio 5 de la rúbrica: «documentación excepcional con ejemplos y claridad para onboarding»): qué hace la fábrica; el diagrama (de docs/grafo.md); los 7 agentes y los nodos de código en una tabla; requisitos (uv, Python 3.12, Claude Code con suscripción, sin API key); instalación; uso de la CLI con un ejemplo real tomado de evidencia/corridas/HU-05-real (pausas, aprobación y resultado); cómo correr las pruebas y ruff; las cinco medidas de seguridad y la demo (HU-98 y HU-99); dónde está la evidencia; estructura de carpetas; limitaciones conocidas y costos observados.
+2. Docstrings: comprueba con `uv run ruff check --select D100,D101,D102,D103,D104 fabrica` que no falte ninguno y corrige lo que salga.
+3. CHANGELOG: entrada de la fase 5 y versión 1.0.0.
+4. evidencia/reflexion.md: un borrador para que yo lo edite, con qué funcionó, qué mejorar y las lecciones aprendidas. Incluye: la pausa humana que atrapó el nombre perdido, el triage del reviewer, la revisión estática que rechazó un intento real del tester, el filtro que detuvo HU-98, que las protecciones de Opus 5.5 pausaron una vez el trabajo de seguridad defensiva y cómo se resolvió (cambio a Opus 4.8 y plantear las tareas desde la defensa), los tiempos de cada fase según date y el costo total.
+5. Comprueba con git check-ignore que docs/conocimiento/, datos/, logs/ y salida/ no se publiquen, y que no haya secretos en el repo.
+6. Publicación: con gh (ya hice gh auth login), prepara la creación del repositorio público Xochitlsw/reto-m3-fabrica-langgraph y el push de main. Muéstrame el comando y espera mi «sí» antes de ejecutarlo. Después del push, confirma que el README se ve bien en GitHub (incluido el diagrama Mermaid) y dame la URL.
+
+Registra esta instrucción en evidencia/prompts.md y propón el commit de la fase 5 antes del push.
+```

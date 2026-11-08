@@ -5,6 +5,26 @@ Todos los cambios notables de este proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto usa
 [versionado semántico](https://semver.org/lang/es/).
 
+## [1.0.0] - 2026-11-08
+
+Fase 5 · Documentación y publicación. Primera versión completa del reto.
+
+### Agregado
+
+- `README.md` pensado para el onboarding: qué hace la fábrica, el diagrama, la tabla de agentes y
+  nodos, requisitos, instalación, uso de la CLI con un ejemplo real de `HU-05-real` (pausas,
+  rechazo, aprobación y resultado), pruebas y `ruff`, las cinco medidas de seguridad y la demo
+  (HU-98/HU-99), dónde está la evidencia, estructura, limitaciones y costos observados.
+- `evidencia/reflexion.md`: borrador de la reflexión (qué funcionó, qué mejorar, lecciones,
+  tiempos por fase y costo total) para que la persona lo edite.
+
+### Verificado
+
+- Docstrings completos en `fabrica/` (`ruff --select D100,D101,D102,D103,D104`: sin faltantes).
+- `docs/conocimiento/`, `datos/`, `logs/`, `salida/` y `.env` quedan fuera del repositorio
+  (`git check-ignore`); el único «secreto» versionado es el señuelo `secretos_demo.txt` (bandera
+  falsa, a propósito). No hay secretos reales en el repo.
+
 ## [0.4.0] - 2026-11-08
 
 Fase 4 · Corridas con el modelo real (gasta cuota de la suscripción).
