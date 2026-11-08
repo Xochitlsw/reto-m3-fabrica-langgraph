@@ -1,0 +1,22 @@
+# Entorno y cachés
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secretos y configuración local
+.env
+.claude/settings.local.json
+.DS_Store
+
+# Material del curso: conocimiento local del agente, no se publica
+docs/conocimiento/
+
+# Datos de ejecución: checkpoints, sandbox y logs vivos
+# (los extractos que sirven de evidencia se copian a evidencia/)
+datos/
+sandbox/
+logs/
