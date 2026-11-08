@@ -135,3 +135,39 @@ sí al commit
 ```
 
 Resultado: commit del paso 12 en `main` con el mensaje propuesto, sin push.
+
+## 2026-11-08 · Fase 3 · Seguridad y demo del ataque
+
+```text
+Fase 3 · Seguridad y demo del ataque, con el modelo falso. Tope: 1 hora; corre `date` al empezar y al terminar.
+
+Completa lo que la sección 5 de @docs/diseno.md deja para esta fase, con pruebas sin modelo:
+1. Guardián, capa 1: todas las reglas de la sección 5 (ruta, symlink, nombre, tamaño, UTF-8, caracteres de control, Unicode oculto o bidi, patrones con NFKC), con una tabla de casos en test_guardian.
+2. Filtro, capa 2: prompt endurecido y escenario `sospechosa` del falso: termina en BLOQUEADA, sin más llamadas.
+3. Revisión estática. La sesión de apoyo comprobó con revisar() que hoy se ACEPTAN tres atajos:
+   - pruebas: `pytest.importorskip("os")` importa cualquier módulo por su nombre;
+   - implementación: `typing.get_type_hints(f)` evalúa como código una anotación escrita como texto;
+   - implementación: `"{0.real.__class__}".format(1)` recorre atributos internos desde una cadena.
+   Ciérralos sin quitar la lista blanca: atributos prohibidos (al menos importorskip, get_type_hints, ForwardRef, _evaluate, getattr, setattr, delattr) y cadenas que contengan "__". Busca también otros atajos del mismo tipo en los módulos permitidos. Cada atajo queda como caso en test_revision_codigo.
+4. Sandbox: rlimit de CPU, tamaño de archivo y archivos abiertos; la sonda de sandbox-exec y su perfil (sin red, sin escritura fuera de la carpeta temporal y sin lectura del señuelo, de .env ni de datos/). Pruebas: bucle infinito, archivo enorme, socket bloqueado, lectura del señuelo bloqueada y escritura fuera de la carpeta bloqueada; las de sandbox-exec se saltan si no existe. Agrega una prueba de defensa en profundidad: con la revisión estática desactivada solo dentro de esa prueba, un código que usa importorskip("os") para leer el señuelo o abrir un socket falla dentro del sandbox.
+5. Log de seguridad: todos los eventos de la sección 5, con sus claves obligatorias.
+6. DEFENSAS=0 y la demo, con historias/HU-99 tal como está en el diseño. Pruebas: con defensas, la capa 1 la bloquea sin ninguna llamada al modelo; con DEFENSAS=0 y el escenario `ataque` del falso, la revisión estática rechaza el código, el flujo termina en ESCALAR y no aparece BANDERA-DEMO en salida/. Las dos corridas dejan rastro en el log.
+7. Prepara la fase 4 sin gastar: amplía `sonda` con una segunda llamada barata (haiku) que use el contrato anidado más grande (Especificacion) y valide el structured_output con Pydantic, para detectar antes si --json-schema rechaza algo del esquema ($defs, pattern, límites). No la ejecutes.
+
+Registra esta instrucción en evidencia/prompts.md; actualiza el CHANGELOG y, si algo cambia, la sección 5 del diseño. Al final propón el commit, sin hacerlo. Repórtame en 25 líneas como máximo: pytest con cobertura, ruff, la salida de las dos corridas de la demo con el falso (con y sin DEFENSAS), un extracto de 5 líneas de logs/seguridad.jsonl, qué otros atajos encontraste, si sandbox-exec funcionó, los recortes y las horas de date.
+```
+
+Resultado: 244 pruebas en verde (96 %→97 % de cobertura), `ruff` limpio, sin llamadas al modelo
+real (14:38 → 15:40). Guardián capa 1 completo, tres atajos de la revisión estática cerrados
+(+ `make_dataclass` y `format_map`), sandbox con `rlimit` y `sandbox-exec` (perfil comprobado), log
+con los 10 eventos, demo de HU-99 con y sin `DEFENSAS`, y `sonda` ampliada con la prueba de
+`--json-schema`/`Especificacion` (sin ejecutar). Diseño (secciones 5 y 10.3) y CHANGELOG (0.3.0)
+actualizados. Commit propuesto, sin hacerlo.
+
+## 2026-11-08 · Fase 3 · Cierre (commit)
+
+```text
+sí al commit
+```
+
+Resultado: commit de la fase 3 en `main` con el mensaje propuesto, sin push.

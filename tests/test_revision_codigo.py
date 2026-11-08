@@ -44,6 +44,29 @@ def test_rechaza(codigo, esperado):
     assert any(esperado in p for p in problemas), problemas
 
 
+@pytest.mark.parametrize(
+    "codigo, tipo, extra, esperado",
+    [
+        # Fase 3: atajos que la lista blanca aceptaba y ahora se cierran.
+        ('import pytest\npytest.importorskip("os")\n', "pruebas", ["antiguedad"],
+         "importorskip"),
+        ("import typing\ntyping.get_type_hints(int)\n", "implementacion", None,
+         "get_type_hints"),
+        ('x = "{0.real.__class__}".format(1)\n', "implementacion", None, "«__»"),
+        ('import typing\ntyping.ForwardRef("1")._evaluate({}, {}, frozenset())\n',
+         "implementacion", None, "_evaluate"),
+        ("import dataclasses\ndataclasses.make_dataclass('X', [])\n", "implementacion", None,
+         "make_dataclass"),
+        ('x = "{a.__class__}".format_map({})\n', "implementacion", None, "«__»"),
+        ('RUTA = "__main__"\n', "implementacion", None, "«__»"),
+    ],
+)
+def test_rechaza_atajos_fase3(codigo, tipo, extra, esperado):
+    """Atributos que evalúan texto o recorren internos, y cadenas con «__»."""
+    problemas = revisar([{"nombre": "a.py", "contenido": codigo}], tipo, extra)
+    assert any(esperado in p for p in problemas), problemas
+
+
 @pytest.mark.parametrize("nombre", ["../x.py", "conftest.py", "a/b.py", "X.py"])
 def test_rechaza_nombres(nombre):
     """Rutas, conftest.py y mayúsculas no se aceptan como nombre de archivo."""

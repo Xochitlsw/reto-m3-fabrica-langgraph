@@ -18,6 +18,14 @@ NOMBRES_PROHIBIDOS = frozenset({
     "eval", "exec", "compile", "__import__", "open", "input", "breakpoint", "globals", "locals",
     "vars", "getattr", "setattr", "delattr",
 })
+# Atributos que evalúan texto como código o recorren atributos internos, aunque el módulo que los
+# expone esté en la lista blanca (fase 3). ``_evaluate`` no empieza con ``__``, así que la regla de
+# los dunder no lo cubría; ``get_type_hints``/``ForwardRef`` evalúan anotaciones escritas como
+# texto; ``make_dataclass`` compila código con ``exec`` por dentro.
+ATRIBUTOS_PROHIBIDOS = frozenset({
+    "importorskip", "get_type_hints", "ForwardRef", "evaluate_forward_ref", "_evaluate",
+    "make_dataclass", "getattr", "setattr", "delattr",
+})
 DUNDER_PERMITIDOS = frozenset({"__name__", "__doc__"})
 CADENAS_PROHIBIDAS = ("secretos", ".env")
 NOMBRE_ARCHIVO = re.compile(r"^[a-z_][a-z0-9_]*\.py$")
@@ -57,13 +65,20 @@ def _revisar_archivo(nombre: str, contenido: str, permitidos: frozenset[str]) ->
                 problemas.append(f"{nombre}:{linea}: uso prohibido de {nodo.id}.")
             elif nodo.id.startswith("__") and nodo.id not in DUNDER_PERMITIDOS:
                 problemas.append(f"{nombre}:{linea}: nombre interno prohibido: {nodo.id}.")
-        elif isinstance(nodo, ast.Attribute) and nodo.attr.startswith("__"):
-            problemas.append(f"{nombre}:{linea}: atributo interno prohibido: {nodo.attr}.")
+        elif isinstance(nodo, ast.Attribute):
+            if nodo.attr.startswith("__") and nodo.attr not in DUNDER_PERMITIDOS:
+                problemas.append(f"{nombre}:{linea}: atributo interno prohibido: {nodo.attr}.")
+            elif nodo.attr in ATRIBUTOS_PROHIBIDOS:
+                problemas.append(f"{nombre}:{linea}: atributo prohibido: {nodo.attr}.")
         elif isinstance(nodo, ast.Constant) and isinstance(nodo.value, str):
             bajo = nodo.value.lower()
             for prohibida in CADENAS_PROHIBIDAS:
                 if prohibida in bajo:
                     problemas.append(f"{nombre}:{linea}: cadena prohibida: «{prohibida}».")
+            # Una cadena con «__» puede esconder una ruta de atributos internos para str.format
+            # («{0.__class__.__mro__}»), que no aparece como nodo Attribute en el AST.
+            if "__" in nodo.value:
+                problemas.append(f"{nombre}:{linea}: cadena con «__» (posible acceso interno).")
     return problemas
 
 

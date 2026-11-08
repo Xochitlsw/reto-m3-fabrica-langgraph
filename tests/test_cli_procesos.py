@@ -110,6 +110,42 @@ def test_cli_real_pide_confirmacion(monkeypatch, rutas_temporales):
     assert cli.main(["sonda"]) == 2
 
 
+def test_sonda_dos_llamadas_sin_gastar(monkeypatch, capsys):
+    """La lógica de las 2 llamadas de la sonda, con subprocess.run simulado (no llama al modelo)."""
+    import json as _json
+
+    from fabrica.contratos import Especificacion
+
+    esp = Especificacion(
+        historia="HU-05", objetivo="Mostrar la antigüedad en años y meses.",
+        criterios=[
+            {"id": "C-01", "descripcion": "camino feliz", "dado": "un ingreso",
+             "cuando": "se consulta", "entonces": "muestra «7 años y 8 meses»"},
+            {"id": "C-02", "descripcion": "entrada inválida", "dado": "un ingreso futuro",
+             "cuando": "se consulta", "entonces": "responde un error"},
+        ],
+        reglas_aplicadas=[8, 13], ejemplos=[], fuera_de_alcance=[], preguntas_abiertas=[],
+    )
+    stream = "\n".join([
+        _json.dumps({"type": "system", "tools": [], "mcp_servers": []}),
+        _json.dumps({"type": "result", "result": "ok", "num_turns": 1, "total_cost_usd": 0.01,
+                     "usage": {"input_tokens": 50}}),
+    ])
+    sobre = _json.dumps({"is_error": False, "total_cost_usd": 0.02,
+                         "structured_output": esp.model_dump()})
+
+    class R:
+        def __init__(self, stdout):
+            self.stdout, self.stderr, self.returncode = stdout, "", 0
+
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: R(stream if "stream-json" in a[0]
+                                                             else sobre))
+    assert cli.main(["sonda", "--si"]) == 0
+    salida = capsys.readouterr().out
+    assert "[1/2] tools: []" in salida
+    assert "--json-schema aceptado" in salida and "2 criterios" in salida
+
+
 def test_cli_grafo(rutas_temporales, capsys):
     """grafo escribe el Mermaid generado o lo imprime."""
     destino = rutas_temporales / "grafo.md"

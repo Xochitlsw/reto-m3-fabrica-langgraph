@@ -204,33 +204,87 @@ def cmd_grafo(args) -> int:
     return 0
 
 
-def cmd_sonda(args) -> int:
-    """Una llamada real barata para verificar el envoltorio (docs/diseno.md, sección 6)."""
+def _sonda_cwd(carpeta, entorno) -> bool:
+    """Llamada 1 (stream-json): comprueba cwd limpio, sin herramientas ni MCP."""
     import subprocess
-    import tempfile
 
-    from fabrica.modelo import _entorno
-
-    if not _confirmar("La sonda hace 1 llamada real con haiku (tope 0.05 USD).", args.si):
-        print("Cancelado: no se llamó al modelo.")
-        return USO_INVALIDO
     cmd = ["claude", "-p", "Responde solo: ok", "--model", "haiku", "--system-prompt",
            "Responde solo: ok", "--tools", "", "--strict-mcp-config", "--no-session-persistence",
            "--output-format", "stream-json", "--verbose", "--max-budget-usd", "0.05"]
-    with tempfile.TemporaryDirectory(prefix="fabrica-sonda-") as carpeta:
-        r = subprocess.run(cmd, cwd=carpeta, capture_output=True, text=True, env=_entorno(),
-                           stdin=subprocess.DEVNULL, timeout=300)
+    r = subprocess.run(cmd, cwd=carpeta, capture_output=True, text=True, env=entorno,
+                       stdin=subprocess.DEVNULL, timeout=300)
     eventos = [json.loads(x) for x in r.stdout.splitlines() if x.strip().startswith("{")]
     inicio = next((e for e in eventos if e.get("type") == "system"), {})
     final = next((e for e in eventos if e.get("type") == "result"), {})
     uso = final.get("usage", {})
     entrada = sum(uso.get(k, 0) for k in ("input_tokens", "cache_creation_input_tokens",
                                           "cache_read_input_tokens"))
-    print(f"tools: {inicio.get('tools')} · mcp_servers: {inicio.get('mcp_servers')}")
-    print(f"tokens de entrada: {entrada} · turnos: {final.get('num_turns')} · "
+    print(f"[1/2] tools: {inicio.get('tools')} · mcp_servers: {inicio.get('mcp_servers')}")
+    print(f"      tokens de entrada: {entrada} · turnos: {final.get('num_turns')} · "
           f"costo: {final.get('total_cost_usd')} USD · resultado: {final.get('result')!r}")
-    ok = r.returncode == 0 and inicio.get("tools") == [] and inicio.get("mcp_servers") == []
-    return 0 if ok else 1
+    return r.returncode == 0 and inicio.get("tools") == [] and inicio.get("mcp_servers") == []
+
+
+def _sonda_esquema(carpeta, entorno) -> bool:
+    """Llamada 2 (json): el contrato anidado más grande (Especificacion) con --json-schema.
+
+    Verifica antes de la fase 4 si ``--json-schema`` acepta ``$defs``, ``pattern`` y los límites del
+    esquema, y valida el ``structured_output`` con Pydantic. No gasta más que una llamada haiku.
+    """
+    import subprocess
+
+    from pydantic import ValidationError
+
+    from fabrica.contratos import Especificacion, problemas_pydantic, validar_especificacion
+
+    esquema = json.dumps(Especificacion.model_json_schema())
+    prompt = ("Devuelve una Especificacion mínima pero válida para la historia HU-05 (antigüedad "
+              "en años y meses): al menos dos criterios con ids C-01 y C-02, uno de error, y "
+              "reglas_aplicadas [8, 13]. Responde solo con el JSON del contrato.")
+    cmd = ["claude", "-p", prompt, "--model", "haiku", "--system-prompt",
+           "Eres un generador de especificaciones. Responde solo con el JSON del contrato.",
+           "--tools", "", "--strict-mcp-config", "--no-session-persistence",
+           "--output-format", "json", "--json-schema", esquema, "--max-budget-usd", "0.10"]
+    r = subprocess.run(cmd, cwd=carpeta, capture_output=True, text=True, env=entorno,
+                       stdin=subprocess.DEVNULL, timeout=300)
+    try:
+        sobre = json.loads(r.stdout)
+    except json.JSONDecodeError:
+        print(f"[2/2] la CLI no devolvió JSON (¿--json-schema rechazó el esquema?): "
+              f"{r.stderr.strip()[:200]}")
+        return False
+    if sobre.get("is_error") or "structured_output" not in sobre:
+        print(f"[2/2] --json-schema rechazó el esquema o no hubo structured_output: "
+              f"{sobre.get('result') or sobre.get('error')}")
+        return False
+    datos = sobre["structured_output"]
+    try:
+        esp = Especificacion.model_validate(datos)
+    except ValidationError as e:
+        print(f"[2/2] el structured_output no cumple Especificacion: {problemas_pydantic(e)[:3]}")
+        return False
+    problemas = validar_especificacion(esp)
+    costo = sobre.get("total_cost_usd")
+    print(f"[2/2] --json-schema aceptado; Especificacion válida ({len(esp.criterios)} criterios); "
+          f"validador: {problemas or 'sin problemas'} · costo: {costo} USD")
+    return True
+
+
+def cmd_sonda(args) -> int:
+    """Dos llamadas reales baratas para verificar el envoltorio (diseño, secciones 6 y 7)."""
+    import tempfile
+
+    from fabrica.modelo import _entorno
+
+    if not _confirmar("La sonda hace 2 llamadas reales con haiku (tope ~0.15 USD en total: una "
+                      "verifica el cwd y otra prueba --json-schema con Especificacion).", args.si):
+        print("Cancelado: no se llamó al modelo.")
+        return USO_INVALIDO
+    entorno = _entorno()
+    with tempfile.TemporaryDirectory(prefix="fabrica-sonda-") as carpeta:
+        ok_cwd = _sonda_cwd(carpeta, entorno)
+        ok_esquema = _sonda_esquema(carpeta, entorno)
+    return 0 if ok_cwd and ok_esquema else 1
 
 
 def parser() -> argparse.ArgumentParser:
@@ -266,7 +320,7 @@ def parser() -> argparse.ArgumentParser:
     q.add_argument("--salida")
     q.set_defaults(func=cmd_grafo)
 
-    q = sub.add_parser("sonda", help="1 llamada real barata para verificar el envoltorio")
+    q = sub.add_parser("sonda", help="2 llamadas reales baratas para verificar el envoltorio")
     q.add_argument("--si", action="store_true")
     q.set_defaults(func=cmd_sonda)
     return p

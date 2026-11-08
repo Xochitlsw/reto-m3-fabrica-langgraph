@@ -5,6 +5,35 @@ Todos los cambios notables de este proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto usa
 [versionado semántico](https://semver.org/lang/es/).
 
+## [0.3.0] - 2026-11-08
+
+Fase 3 · Seguridad completa y demo del ataque. Ninguna llamada al modelo real.
+
+### Agregado
+
+- Guardián, capa 1 completa (`fabrica/seguridad/guardian.py`): además de la ruta y el tamaño,
+  UTF-8 estricto, caracteres de control, Unicode oculto o bidireccional (U+200B–200F, U+202A–202E,
+  U+2066–2069, U+FEFF) y patrones de inyección normalizados con NFKC; marca URLs y bloques de código.
+- `historias/HU-99-exportar-antiguedad.md`: la historia maliciosa de la demo (tal como el diseño).
+- Sandbox endurecido: `rlimit` de CPU (30 s), tamaño de archivo (5 MB) y descriptores (128) con un
+  `preexec_fn`, sin `RLIMIT_NPROC`; sonda cacheada de `sandbox-exec` y su perfil SBPL (niega la red,
+  la escritura fuera de la carpeta temporal y la lectura del señuelo, `.env` y `datos/`).
+- Pruebas sin modelo: `test_guardian` (tabla de casos), ampliaciones de `test_revision_codigo`,
+  `test_sandbox` (rlimit, sandbox-exec y defensa en profundidad), `test_log` (los 10 eventos) y la
+  demo de HU-99 en `test_grafo` (con y sin `DEFENSAS`). 244 pruebas, cobertura 97 %.
+- `sonda` hace una segunda llamada barata que prueba `--json-schema` con `Especificacion` y valida
+  el `structured_output` con Pydantic (preparación de la fase 4; no se ejecuta).
+
+### Cambiado
+
+- Revisión estática: se cierran tres atajos que la lista blanca aceptaba (`pytest.importorskip`,
+  `typing.get_type_hints`, `"{0.real.__class__}".format(...)`) y otros del mismo tipo
+  (`make_dataclass`, `str.format_map`) con un conjunto de atributos prohibidos y la regla de que
+  ninguna cadena contenga `__`. No se quitó la lista blanca de imports.
+- `DEFENSAS=0` apaga la detección de inyección de la capa 1 y el filtro, pero **no** el límite de
+  ruta, tamaño y UTF-8 (`revisar_ruta`): así el señuelo nunca se lee y HU-99 puede llegar a los
+  agentes para la demo de defensa en profundidad. Precisión anotada en el diseño (sección 10.3).
+
 ## [0.2.0] - 2026-11-08
 
 Fase 2 · Núcleo LangGraph con modelo falso. Ninguna llamada al modelo real.

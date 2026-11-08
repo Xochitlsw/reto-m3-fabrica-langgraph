@@ -27,6 +27,21 @@ def test_extra_operador_y_sha():
     assert "opcional" not in linea and linea["usuario_so"]
 
 
+def test_todos_los_eventos_de_la_seccion5():
+    """Los 10 eventos de la sección 5 se aceptan y escriben con las claves obligatorias."""
+    esperados = {
+        "bloqueo", "alerta", "salida_rechazada", "sandbox", "aprobacion", "rechazo",
+        "aclaracion", "escalamiento", "defensas_desactivadas", "respuesta_rechazada",
+    }
+    assert set(log.EVENTOS) == esperados
+    for evento in log.EVENTOS:
+        linea = log.registrar(evento, hilo="h", hu="HU-05", capa="reglas", nodo="guardian",
+                              detalle="prueba")
+        assert all(clave in linea for clave in log.CLAVES)
+        assert linea["evento"] == evento
+    assert {x["evento"] for x in log.leer("h")} == esperados
+
+
 def test_evento_desconocido():
     """Un evento fuera de la lista es un error."""
     with pytest.raises(ValueError):

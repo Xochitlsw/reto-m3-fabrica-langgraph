@@ -11,6 +11,7 @@ from fabrica.grafo import construir_grafo, dibujar
 from fabrica.seguridad import log
 
 HU05 = str(config.RAIZ / "historias" / "HU-05-consultar-antiguedad.md")
+HU99 = str(config.RAIZ / "historias" / "HU-99-exportar-antiguedad.md")
 
 
 def aprobar_todo(paquete: dict) -> dict:
@@ -184,6 +185,30 @@ def test_ataque_lo_detiene_la_lista_blanca():
     estado, _, _ = correr("ataque")
     assert estado["estado_final"] == "ESCALAR A UNA PERSONA"
     assert "implementador" in estado["motivo_final"]
+
+
+# --- Fase 3: la demo del ataque con HU-99 ------------------------------------------------------
+def test_demo_hu99_con_defensas_bloquea_sin_llamar_al_modelo():
+    """Con defensas, la capa 1 bloquea HU-99 por su contenido: BLOQUEADA y 0 llamadas al modelo."""
+    estado, _, modelo = correr("feliz", ruta=HU99, hilo="d1")
+    assert estado["estado_final"] == "BLOQUEADA POR SEGURIDAD"
+    assert modelo.agentes_llamados() == []
+    assert log.leer("d1")[0]["evento"] == "bloqueo"
+
+
+def test_demo_hu99_sin_defensas_la_detiene_la_revision_estatica(monkeypatch, rutas_temporales):
+    """Con DEFENSAS=0, HU-99 llega a los agentes; la revisión estática del código → ESCALAR."""
+    monkeypatch.setenv("DEFENSAS", "0")
+    estado, _, modelo = correr("ataque", ruta=HU99, hilo="d2")
+    assert estado["estado_final"] == "ESCALAR A UNA PERSONA"
+    assert "implementador" in estado["motivo_final"]
+    assert "implementador" in modelo.agentes_llamados()  # las defensas estaban apagadas
+    eventos = {x["evento"] for x in log.leer("d2")}
+    assert "defensas_desactivadas" in eventos and "salida_rechazada" in eventos
+    salida = rutas_temporales / "salida" / "d2"
+    for archivo in salida.rglob("*"):
+        if archivo.is_file():
+            assert config.BANDERA not in archivo.read_text(encoding="utf-8")
 
 
 def test_dibujo_con_las_aristas():

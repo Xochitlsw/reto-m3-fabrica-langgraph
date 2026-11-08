@@ -2,20 +2,27 @@
 
 Primero repite la revisión estática (si falla, no ejecuta nada). Después escribe el código y las
 pruebas en una carpeta temporal propia y corre pytest en un subproceso con entorno limpio,
-``timeout`` y su propia sesión de procesos. El código generado nunca corre con ``exec()``.
+``timeout``, su propia sesión de procesos y ``rlimit`` (CPU, tamaño de archivo y descriptores). El
+código generado nunca corre con ``exec()``.
 
-Fase 2: versión básica. La fase 3 agrega los ``rlimit`` y ``sandbox-exec``.
+En macOS, si la sonda de ``sandbox-exec`` pasa, pytest corre además dentro de un perfil que niega la
+red, la escritura fuera de la carpeta temporal y la lectura del señuelo, de ``.env`` y de
+``datos/``. ``sandbox-exec`` está obsoleto en Apple y puede desaparecer: por eso es la segunda capa,
+detrás de la revisión estática con lista blanca, y se salta si la sonda falla.
 """
 
 import os
+import resource
 import signal
 import subprocess
 import sys
 import tempfile
 import time
 import xml.etree.ElementTree as ET
+from functools import lru_cache
 from pathlib import Path
 
+from fabrica import config
 from fabrica.contratos import ResultadoEjecucion
 from fabrica.seguridad.revision_codigo import revisar
 
@@ -23,6 +30,13 @@ TIMEOUT = 60
 MAX_LOG = 4000
 MAX_FALLO = 400
 PYTEST_INI = "[pytest]\naddopts = -p no:cacheprovider\n"
+
+# Límites por recurso (docs/diseno.md, sección 5). Sin RLIMIT_NPROC: en macOS cuenta todos los
+# procesos del usuario, no solo los del sandbox. RLIMIT_AS no se respeta en macOS.
+CPU_SEGUNDOS = 30
+FSIZE_BYTES = 5 * 1024 * 1024
+NOFILE = 128
+SANDBOX_EXEC = "/usr/bin/sandbox-exec"
 
 
 def entorno_limpio(carpeta: Path) -> dict:
@@ -37,13 +51,58 @@ def entorno_limpio(carpeta: Path) -> dict:
     }
 
 
-def comando(carpeta: Path) -> list[str]:
+def _limites() -> None:
+    """``preexec_fn``: nueva sesión y ``rlimit`` de CPU, tamaño de archivo y descriptores."""
+    os.setsid()
+    resource.setrlimit(resource.RLIMIT_CPU, (CPU_SEGUNDOS, CPU_SEGUNDOS))
+    resource.setrlimit(resource.RLIMIT_FSIZE, (FSIZE_BYTES, FSIZE_BYTES))
+    resource.setrlimit(resource.RLIMIT_NOFILE, (NOFILE, NOFILE))
+
+
+def perfil_sandbox(carpeta: Path) -> str:
+    """Perfil SBPL: niega la red, la escritura fuera de la carpeta y la lectura de lo sensible."""
+    tmp = str(carpeta.resolve())
+    senuelo = str((config.RAIZ / "secretos_demo.txt").resolve())
+    env = str((config.RAIZ / ".env").resolve())
+    datos = str(config.ruta_db().resolve().parent)
+    return (
+        "(version 1)\n"
+        "(allow default)\n"
+        "(deny network*)\n"
+        "(deny file-write*)\n"
+        f'(allow file-write* (subpath "{tmp}") (subpath "/dev"))\n'
+        f'(deny file-read* (subpath "{datos}") (literal "{senuelo}") (literal "{env}"))\n'
+    )
+
+
+@lru_cache(maxsize=1)
+def sandbox_exec_disponible() -> bool:
+    """¿Existe ``sandbox-exec`` y deja correr el Python del proyecto bajo el perfil? (se cachea)."""
+    if not Path(SANDBOX_EXEC).exists():
+        return False
+    try:
+        with tempfile.TemporaryDirectory(prefix="fabrica-sonda-") as tmp:
+            carpeta = Path(tmp)
+            cmd = [SANDBOX_EXEC, "-p", perfil_sandbox(carpeta),
+                   sys.executable, "-I", "-c", "print('ok')"]
+            r = subprocess.run(cmd, cwd=carpeta, env=entorno_limpio(carpeta),
+                               capture_output=True, text=True, timeout=30,
+                               stdin=subprocess.DEVNULL)
+        return r.returncode == 0 and "ok" in r.stdout
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def comando(carpeta: Path, usar_sandbox_exec: bool = False) -> list[str]:
     """pytest con el Python del proyecto, sin bytecode, sin site del usuario y sin caché."""
-    return [
+    base = [
         sys.executable, "-B", "-s", "-m", "pytest", "-q", "-p", "no:cacheprovider",
         "-c", str(carpeta / "pytest.ini"), "--rootdir", str(carpeta),
         f"--junitxml={carpeta / 'resultados.xml'}",
     ]
+    if usar_sandbox_exec:
+        return [SANDBOX_EXEC, "-p", perfil_sandbox(carpeta), *base]
+    return base
 
 
 def _leer_junit(ruta: Path) -> tuple[int, int, int, list[str]]:
@@ -68,11 +127,12 @@ def _leer_junit(ruta: Path) -> tuple[int, int, int, list[str]]:
     return len(casos) - fallidas - errores - saltadas, fallidas, errores, fallos
 
 
-def _correr(carpeta: Path, timeout: float) -> tuple[int | None, str]:
-    """Corre pytest en su propia sesión; al vencer el tiempo mata a todo el grupo."""
+def _correr(carpeta: Path, timeout: float, usar_sandbox_exec: bool) -> tuple[int | None, str]:
+    """Corre pytest en su propia sesión con ``rlimit``; al vencer el tiempo mata a todo el grupo."""
     proceso = subprocess.Popen(
-        comando(carpeta), cwd=carpeta, env=entorno_limpio(carpeta), stdin=subprocess.DEVNULL,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, start_new_session=True,
+        comando(carpeta, usar_sandbox_exec), cwd=carpeta, env=entorno_limpio(carpeta),
+        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        preexec_fn=_limites,
     )
     try:
         salida, _ = proceso.communicate(timeout=timeout)
@@ -106,8 +166,9 @@ def ejecutar(
     for archivo in archivos_impl + archivos_pru:
         (carpeta / archivo["nombre"]).write_text(archivo["contenido"], encoding="utf-8")
     (carpeta / "pytest.ini").write_text(PYTEST_INI, encoding="utf-8")
+    usar_sandbox_exec = sandbox_exec_disponible()
     inicio = time.monotonic()
-    codigo, salida = _correr(carpeta, timeout)
+    codigo, salida = _correr(carpeta, timeout, usar_sandbox_exec)
     segundos = round(time.monotonic() - inicio, 2)
     aprobadas, fallidas, errores, fallos = _leer_junit(carpeta / "resultados.xml")
     if codigo is None:
@@ -116,7 +177,8 @@ def ejecutar(
     ok = codigo == 0 and fallidas == 0 and errores == 0 and aprobadas > 0
     return ResultadoEjecucion(
         ok=ok, evaluado=evaluado, aprobadas=aprobadas, fallidas=fallidas, errores=errores,
-        segundos=segundos, fallos=fallos[:20], log=salida[-MAX_LOG:], aislamiento="subproceso",
+        segundos=segundos, fallos=fallos[:20], log=salida[-MAX_LOG:],
+        aislamiento="sandbox-exec" if usar_sandbox_exec else "subproceso",
     )
 
 
