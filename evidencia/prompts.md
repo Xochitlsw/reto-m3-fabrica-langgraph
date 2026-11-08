@@ -122,3 +122,16 @@ Sigue los pasos 1 a 12 de @docs/diseno.md (sección 10) en orden; no pases a un 
 - Si un paso se atora más de 20 minutos, detente y repórtame con la salida del error en lugar de rodearlo.
 - Al terminar, repórtame en 25 líneas como máximo: la salida de `uv run pytest -q --cov=fabrica` (con el porcentaje) y de `uv run ruff check .`, la corrida de test_cli_procesos (iniciar → estado → aprobar con el mismo thread_id), qué resultó de lo que faltaba verificar (Command(goto=lista), stream y LANGGRAPH_STRICT_MSGPACK), los recortes aplicados, las horas de `date` y cualquier desviación del diseño con su motivo.
 ```
+
+Resultado: pasos 1–12 en verde con el modelo falso (14:04 → 14:29), sin recortes. Commits locales
+`051173f` (pasos 1–6) y `79f0644` (pasos 7–10); el del paso 12 se propuso. 196 pruebas, 96 % de
+cobertura, `ruff` limpio. Se comprobaron `Command(goto=lista)`, `stream` y
+`LANGGRAPH_STRICT_MSGPACK`; las desviaciones quedaron en `docs/diseno.md` (sección 10.2).
+
+## 2026-11-08 · Fase 2 · Cierre (commit)
+
+```text
+sí al commit
+```
+
+Resultado: commit del paso 12 en `main` con el mensaje propuesto, sin push.

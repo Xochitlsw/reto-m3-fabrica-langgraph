@@ -45,23 +45,26 @@ supervisor, estado, pausas, seguridad, CLI y orden de construcción. Aquí va el
 
 ```mermaid
 flowchart TD
-    E([historia .md]) --> G[guardián · reglas en código]
-    G -->|bloqueada| FIN([fin · reporte])
-    G --> F[filtro · modelo pequeño]
+    E([START · historia .md]) --> G[guardian · reglas en código]
+    G -->|bloqueada| FIN[fin · reporte]
+    G -->|pasa| F[filtro · modelo pequeño]
     F -->|sospechosa| FIN
-    F --> S{supervisor · Command}
+    F -->|ok| S{supervisor · Command}
     S --> ESP[especificador] --> S
     S --> ACL[/aclarar · interrupt/] --> S
     S --> PLA[planificador] --> S
-    S --> APR[/aprobar plan · interrupt/] --> S
+    S --> APR[/aprobar_plan · interrupt/] --> S
     S --> IMP[implementador] --> S
     S --> TES[tester] --> S
     S --> SBX[sandbox] --> S
     S --> REV[reviewer] --> S
     S --> ESC[/escalar · interrupt/] --> S
     S --> DOC[documentador] --> S
-    S --> FIN
+    S --> FIN --> FINAL([END])
 ```
+
+El grafo real se genera con `uv run python -m fabrica grafo --salida docs/grafo.md`; este diagrama
+y el de `docs/diseno.md` deben coincidir con él.
 
 - **Supervisor (código):** el nodo supervisor llama a la función pura `decidir(estado)` y devuelve
   `Command(goto=...)`. «Con pasos conocidos, es más barato y más predecible» (m3api_sesion03,
@@ -120,6 +123,13 @@ también se apaga la auditoría; aquí el log sigue, para que la demo deje rastr
 - Pruebas con `pytest`. **Ninguna prueba llama al modelo real**: usan el modelo falso.
   `pytest -q` en verde antes de cada commit.
 - Estilo con `ruff`.
+- Comandos: `uv run pytest -q --cov=fabrica` y `uv run ruff check .`; una corrida sin gasto con
+  `uv run python -m fabrica iniciar historias/HU-05-consultar-antiguedad.md --falso feliz`, luego
+  `estado <hilo>` y `aprobar <hilo> --operador xochitl --decision aprobar`. Sin `--falso`, la CLI
+  usa el modelo real y pide confirmación (o `--si`).
+- Las pruebas redirigen `logs/`, `salida/`, `evidencia/corridas/` y la base de checkpoints a una
+  carpeta temporal con `FABRICA_LOG`, `FABRICA_SALIDA`, `FABRICA_EVIDENCIA` y `FABRICA_DB`
+  (`tests/conftest.py`).
 - `CHANGELOG.md` con el formato Keep a Changelog; cada fase agrega su entrada.
 - Estructura: `fabrica/` (el paquete), `tests/`, `historias/`, `contexto/`, `docs/`,
   `evidencia/` (prompts, corridas, capturas y reflexión) y `salida/` (lo que genera la fábrica).

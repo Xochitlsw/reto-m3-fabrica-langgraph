@@ -18,7 +18,6 @@ from fabrica.modelo import ErrorModelo, RespuestaModelo
 ESCENARIOS = (
     "feliz",
     "preguntas",
-    "rechazo",
     "correccion",
     "tester_culpable",
     "escalar",
