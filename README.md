@@ -213,6 +213,32 @@ propósito y nunca se lee.
 
 ---
 
+## Features de LangGraph
+
+Qué se usa del framework, dónde vive y si viene del curso o se verificó contra la documentación
+oficial (detalle en [`docs/diseno.md`](docs/diseno.md), sección 9):
+
+| Feature | Dónde (archivo · símbolo) | Origen |
+| --- | --- | --- |
+| `StateGraph` + `TypedDict(total=False)` | `fabrica/estado.py` (`EstadoFabrica`) · `fabrica/grafo.py` (`construir_grafo`) | curso |
+| Reductores `Annotated[…, operator.add]` | `fabrica/estado.py` (`bitacora`, `costo_usd`, `llamadas`, `errores_agente`) | curso |
+| Aristas condicionales con `Literal` | `fabrica/grafo.py` (`despues_guardian`, `despues_filtro` + `add_conditional_edges`) | curso |
+| `Command(goto=…)` + abanico paralelo | `fabrica/supervisor.py` (`decidir`/`nodo`; `goto=["implementador","tester"]`) | curso |
+| Ciclos con tope | `fabrica/supervisor.py` (`MAX_RECHAZOS`, `MAX_CICLOS`, `MAX_VUELTAS`) | curso |
+| `interrupt` + `Command(resume)` en las 3 pausas | `fabrica/humano.py` (`nodo_aclarar`, `nodo_aprobar_plan`, `nodo_escalar`) · `fabrica/cli.py` (`cmd_aprobar`) | curso |
+| `SqliteSaver` entre procesos | `fabrica/cli.py` (`abrir_grafo` → `SqliteSaver.from_conn_string`) | fuera · verificado |
+| `get_state` / `get_state_history` | `fabrica/cli.py` (`cmd_estado`, `_reportar`) | fuera · verificado |
+| `stream(stream_mode="updates")` | `fabrica/cli.py` (`_correr`) | fuera · verificado |
+| `draw_mermaid()` | `fabrica/grafo.py` (`dibujar`) → `docs/grafo.md` | curso |
+| `LANGGRAPH_STRICT_MSGPACK` | `fabrica/__main__.py` (se fija antes de importar langgraph) | fuera · verificado |
+
+## Integración continua
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) corre en cada `push` y `pull_request` a
+`main` (GitHub Actions, `ubuntu-latest`, Python 3.12 con `uv`): `uv sync`, `ruff check` y `pytest`
+con cobertura (umbral `fail_under = 80`). Las pruebas que dependen de macOS (`sandbox-exec`) o del
+binario `claude` se saltan solas en Linux.
+
 ## Evidencia
 
 - [`evidencia/prompts.md`](evidencia/prompts.md) — cada instrucción recibida, literal, con fecha y fase.

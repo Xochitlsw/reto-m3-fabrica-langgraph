@@ -37,3 +37,6 @@ select = ["E", "F", "W", "I", "B", "UP"]
 
 [tool.coverage.run]
 source = ["fabrica"]
+
+[tool.coverage.report]
+fail_under = 80

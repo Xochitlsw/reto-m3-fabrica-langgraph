@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  pruebas:
+    name: ruff + pytest (cobertura)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar uv y Python 3.12
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Sincronizar dependencias (desde uv.lock)
+        run: uv sync --frozen
+
+      - name: Estilo con ruff
+        run: uv run ruff check .
+
+      - name: Pruebas con cobertura (umbral 80 %)
+        # En Linux no hay sandbox-exec ni el binario claude: esas pruebas se saltan solas.
+        run: uv run pytest -q --cov=fabrica

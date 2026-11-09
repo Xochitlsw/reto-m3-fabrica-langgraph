@@ -199,3 +199,17 @@ Fase 5 · Documentación y publicación. Tope: 45 minutos; corre `date` al empez
 
 Registra esta instrucción en evidencia/prompts.md y propón el commit de la fase 5 antes del push.
 ```
+
+## 2026-11-08 · Fase 6 · Ajustes finales
+
+```text
+Fase 6 · Ajustes finales (sin llamadas al modelo real). Tope: 45 minutos; corre `date` al empezar y al terminar.
+
+1. README: agrega una sección «Features de LangGraph» con una tabla feature → dónde está en el código (archivo y función) → si viene del curso o de fuera: StateGraph con TypedDict y reductores, aristas condicionales, Command(goto) incluido el abanico paralelo, ciclos con tope, interrupt + Command(resume) en las 3 pausas, SqliteSaver entre procesos, get_state y get_state_history, stream, draw_mermaid y LANGGRAPH_STRICT_MSGPACK.
+2. Umbral de cobertura: agrega fail_under = 80 en la configuración de coverage de pyproject.toml y comprueba que `uv run pytest -q --cov=fabrica` lo respeta.
+3. CI: agrega .github/workflows/ci.yml con GitHub Actions (ubuntu-latest, Python 3.12 con uv): uv sync, ruff check y pytest con cobertura. Las pruebas que dependen de macOS (sandbox-exec) o del binario claude deben saltarse solas en Linux; si alguna falla en CI por eso, corrígela.
+4. Opcional, solo si terminas los puntos 1 a 3 antes de 25 minutos: agrupa guardián y filtro en un subgrafo compilado «seguridad_entrada», agregado como nodo del grafo principal, sin cambiar su comportamiento ni los nombres de la bitácora. Agrega su prueba sin modelo, regenera docs/grafo.md y actualiza el README. Si complica las pruebas existentes, no lo hagas y anótalo.
+5. CHANGELOG 1.1.0 y registro de esta instrucción en evidencia/prompts.md.
+
+Propón el commit y espera mi «sí» antes del push. Después del push, revisa con gh run list que la CI pase en verde. Repórtame: pytest con cobertura, ruff, el enlace de la corrida de CI y si hiciste el subgrafo.
+```

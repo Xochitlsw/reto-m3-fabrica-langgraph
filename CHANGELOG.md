@@ -5,6 +5,32 @@ Todos los cambios notables de este proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto usa
 [versionado semántico](https://semver.org/lang/es/).
 
+## [1.1.0] - 2026-11-08
+
+Fase 6 · Ajustes finales (sin llamadas al modelo real).
+
+### Agregado
+
+- `README.md`: sección «Features de LangGraph» (feature → archivo y símbolo → curso o verificado) y
+  sección «Integración continua».
+- Integración continua: `.github/workflows/ci.yml` (GitHub Actions, `ubuntu-latest`, Python 3.12 con
+  `uv`): `uv sync --frozen`, `ruff check` y `pytest` con cobertura. Las pruebas que dependen de
+  macOS (`sandbox-exec`) o del binario `claude` se saltan solas en Linux.
+
+### Cambiado
+
+- Cobertura: `fail_under = 80` en `[tool.coverage.report]`. `uv run pytest --cov=fabrica` ahora falla
+  si baja del 80 % (hoy: 96.7 %).
+
+### No hecho (y por qué)
+
+- **Subgrafo `seguridad_entrada`** (agrupar guardián y filtro, punto 4, opcional): no se hizo. Habría
+  cambiado la salida de `draw_mermaid` (y por tanto `docs/grafo.md`), lo que rompe las aserciones de
+  aristas y orden de nodos de `test_grafo`, y habría obligado a reencaminar «bloqueada → fin» en el
+  grafo padre y a propagar el checkpointer al subgrafo, tocando las pruebas de SQLite entre procesos.
+  El enunciado pedía no hacerlo si complicaba las pruebas existentes; esto las complicaba, para una
+  mejora solo cosmética del grafo.
+
 ## [1.0.0] - 2026-11-08
 
 Fase 5 · Documentación y publicación. Primera versión completa del reto.
