@@ -45,10 +45,10 @@ graph TD;
 	fin(fin · reporte)
 	__end__([END]):::last
 	__start__ --> guardian;
-	guardian -.bloqueada.-> fin;
-	guardian -.pasa.-> filtro;
-	filtro -.sospechosa.-> fin;
-	filtro -.ok.-> supervisor;
+	guardian -.->|bloqueada| fin;
+	guardian -.->|pasa| filtro;
+	filtro -.->|sospechosa| fin;
+	filtro -.->|ok| supervisor;
 	supervisor -.-> especificador; especificador --> supervisor;
 	supervisor -.-> aclarar; aclarar --> supervisor;
 	supervisor -.-> planificador; planificador --> supervisor;
